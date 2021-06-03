@@ -7,9 +7,10 @@ from argparse import Namespace
 
 
 args = Namespace(
-    lr=0.01,
+    lr=0.05,
     num_epochs=30,
-    device=torch.device('cuda:0')
+    device=torch.device('cuda:0'),
+    num_workers=4
     # device=None
 )
 
@@ -44,6 +45,11 @@ def train(net: nn.Module):
     drawer.show()
 
 
+def init_weights(m):
+    if type(m) == nn.Linear or type(m) == nn.Conv2d:
+        nn.init.xavier_uniform_(m.weight)
+
+
 if __name__ == '__main__':
     # nvidia-smi dmon -d 3 -s pum
     # input shape: 1*224*224
@@ -66,4 +72,56 @@ if __name__ == '__main__':
         nn.Linear(4096, 1000),
         nn.Linear(1000, 10)
     )
-    train(alexnet)
+
+    # ninblock
+    class ninblock(nn.Module):
+        def __init__(self, input_channel, output_channel,
+                     kernel_size, stride, padding):
+            super().__init__()
+            self.conv1 = nn.Conv2d(
+                input_channel, output_channel, kernel_size=kernel_size,
+                stride=stride, padding=padding)
+            self.conv2 = nn.Conv2d(
+                output_channel, output_channel, kernel_size=1)
+            self.conv3 = nn.Conv2d(
+                output_channel, output_channel, kernel_size=1)
+
+        def forward(self, X):
+            X = self.conv1(X)
+            X = nn.ReLU()(X)
+            X = self.conv2(X)
+            X = nn.ReLU()(X)
+            X = self.conv3(X)
+            X = nn.ReLU()(X)
+            return X
+
+    def getninblock(in_channel, out_channel, kernel_size, stride, padding):
+        return nn.Sequential(
+            nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding),
+            nn.ReLU(),
+            nn.Conv2d(out_channel, out_channel, kernel_size=1),
+            nn.ReLU(),
+            nn.Conv2d(out_channel, out_channel, kernel_size=1),
+            nn.ReLU()
+        )
+
+    # nin
+    nin = nn.Sequential(
+        getninblock(1, 96, kernel_size=11, stride=4, padding=0),
+        nn.MaxPool2d(kernel_size=3, stride=2),
+        getninblock(96, 256, kernel_size=5, stride=1, padding=2),
+        nn.MaxPool2d(kernel_size=3, stride=2),
+        getninblock(256, 384, kernel_size=3, stride=1, padding=1),
+        nn.MaxPool2d(kernel_size=3, stride=2),
+        nn.Dropout(0.5),
+        getninblock(384, 10, kernel_size=3, stride=1, padding=1),
+        nn.AdaptiveMaxPool2d((1, 1)),
+        nn.Flatten()
+    )
+    nin.apply(init_weights)
+    # train(nin)
+    epoch, loss, trainacc, testacc = 1, 1, 1, 1
+    print(
+        f"epoch: {epoch:02d}, loss: {loss:.4f}, "
+        f"trainacc: {trainacc:.4f}, testacc: {testacc:.4f}"
+    )
