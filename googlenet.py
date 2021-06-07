@@ -67,7 +67,7 @@ class Inception(nn.Module):
 def train(net: nn.Module):
     net.apply(init_weights)
     net.to(args.device)
-    drawer = Drawer(legend=['trainacc', 'testacc'], figsize=(4, 4))
+    drawer = Drawer(legend=['trainacc', 'testacc'], figsize=(6, 6))
     optimizer = torch.optim.SGD(net.parameters(), lr=args.lr)
     criterion = torch.nn.CrossEntropyLoss()
 
