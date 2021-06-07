@@ -119,9 +119,9 @@ if __name__ == '__main__':
         nn.Flatten()
     )
     nin.apply(init_weights)
-    # train(nin)
-    epoch, loss, trainacc, testacc = 1, 1, 1, 1
-    print(
-        f"epoch: {epoch:02d}, loss: {loss:.4f}, "
-        f"trainacc: {trainacc:.4f}, testacc: {testacc:.4f}"
-    )
+    train(nin)
+    # epoch, loss, trainacc, testacc = 1, 1, 1, 1
+    # print(
+    #     f"epoch: {epoch:02d}, loss: {loss:.4f}, "
+    #     f"trainacc: {trainacc:.4f}, testacc: {testacc:.4f}"
+    # )
