@@ -21,15 +21,60 @@ class Residual(nn.Module):
 
     def forward(self, X):
         Y = F.relu(self.bn1(self.conv1(X)))
-        Y = F.relu(self.bn2(self.conv2(Y)))
+        Y = self.bn2(self.conv2(Y))
 
         if self.conv3 is not None:
             X = self.conv3(X)
         Y += X
-        return Y
+        return F.relu(Y)
+
+
+class ResNet(nn.Module):
+    def __init__(self):
+        '''
+        input size: 1*224*224
+        '''
+        super().__init__()
+        b1 = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        )
+
+        b2 = nn.Sequential(
+            Residual(64, 64),
+            Residual(64, 64)
+        )
+
+        b3 = nn.Sequential(
+            Residual(64, 128, stride=2),
+            Residual(128, 128)
+        )
+
+        b4 = nn.Sequential(
+            Residual(128, 256, stride=2),
+            Residual(256, 256)
+        )
+
+        b5 = nn.Sequential(
+            Residual(256, 512, stride=2),
+            Residual(512, 512)
+        )
+
+        b6 = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Linear(512, 10)
+        )
+
+        self.net = nn.Sequential(b1, b2, b3, b4, b5, b6)
+
+    def forward(self, X):
+        return self.net(X)
 
 
 if __name__ == "__main__":
-    X = torch.ones((1, 3, 96, 96))
-    res = Residual(3, 16, stride=2)
-    print(res(X).shape)
+    X = torch.ones((1, 1, 224, 224))
+    resnet = ResNet()
+    print(resnet(X).shape)
